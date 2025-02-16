@@ -8,7 +8,7 @@
     "prettier": "^3.5.1"
   },
   "scripts": {
-    "start": "ts-node index.ts",
+    "start": "ts-node src/index.ts",
     "format": "prettier --write \"**/*.{js,ts,json}\""
   },
   "dependencies": {
