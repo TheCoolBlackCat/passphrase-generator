@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import prompts, { Answers, PromptObject } from "prompts";
+import prompts, { Answers } from "prompts";
 import fs from "fs/promises";
-import { info, log } from "console";
 import { Command } from 'commander';
+import colours from 'yoctocolors-cjs';
+import zxcvbn from 'zxcvbn'
 
 
 interface WordList {
@@ -16,8 +17,10 @@ interface WordList {
     }
 }
 
+type CLIAnswers = Answers<'length' | 'separator' | 'capitalise' | 'addNumber' | 'showStats'>;
+
 async function migrateWordsList() {
-    info("Migrating words list...");
+    console.info("Migrating words list...");
     const wordsFile = await fs.readFile("eff_wordlist.txt", "utf8");
     const wordList = wordsFile.split("\n");
     const words = wordList.reduce((acc: WordList['words'], word: string) => {
@@ -42,7 +45,7 @@ async function migrateWordsList() {
   
     const jsonWords = JSON.stringify({words, wordsByLength, stats: {shortestWordLength, longestWordLength, availableWordSizes}} satisfies WordList);
     await fs.writeFile("words.json", jsonWords);
-    info("Words list migrated successfully");
+    console.info("Words list migrated successfully");
 }
 
 async function getWordList(): Promise<WordList> {
@@ -108,6 +111,8 @@ async function generatePassphrase({words, wordsByLength, stats}: WordList, lengt
     return pickedWords.join(separator) + (needToAddNumber ? numberToJoin : '');
 }
 
+// TODO: Generate passphrase from a given number of words, rather than total length
+
 async function main() {
     const program = new Command();
     program
@@ -116,11 +121,12 @@ async function main() {
         .option('-c, --capitalise <boolean>', 'capitalize each word', 'true')
         .option('-n, --add-number <boolean>', 'add random number', 'true')
         .option('-i, --interactive', 'use interactive prompt mode')
+        .option('--stats', 'show password stats', false)
         .option('--migrate', 'migrate eff_wordlist.txt file to JSON');
 
     program.parse();
 
-    let options: Answers<'length' | 'separator' | 'capitalise' | 'addNumber'>;
+    let options: CLIAnswers
     
     if (program.opts().migrate) {
         await migrateWordsList();
@@ -134,25 +140,31 @@ async function main() {
                 message: "What is the length restriction on your password?",
                 initial: 20,
                 min: 4,
-              },
-              {
+            },
+            {
                 type: "text",
                 name: "separator",
                 message: "What separator would you like to use?",
                 initial: "-",
-              },
-              {
+            },
+            {
                 type: "confirm",
                 name: "capitalise",
                 message: "Would you like to capitalise each word?",
                 initial: true,
-              },
-              {
+            },
+            {
                   type: "confirm",
                   name: "addNumber",
                   message: "Would you like to add a random number in the string?",
                   initial: true,
-                },
+            },
+            {
+                type: "confirm",
+                name: "showStats",
+                message: "Would you like to show some password stats?",
+                initial: false,
+            }
         ]);
 
         if (!options.length) {
@@ -165,15 +177,27 @@ async function main() {
             length: parseInt(opts.length),
             separator: opts.separator,
             capitalise: opts.capitalise === 'true',
-            addNumber: opts.addNumber === 'true'
+            addNumber: opts.addNumber === 'true',
+            showStats: opts.stats
         };
     }
 
     const wordList = await getWordList();
     const numberToJoin = options.addNumber ? Math.floor(Math.random() * 100) : undefined
     const passphrase = await generatePassphrase(wordList, options.length, options.separator, options.capitalise, numberToJoin)
-    console.log(passphrase)
-    console.log('length:', passphrase.length)
+    console.log(colours.blue(passphrase))
+    if (options.showStats) {
+        console.log('-------------STATS-----------')
+        console.log('Length:', passphrase.length)
+        const stats = zxcvbn(passphrase)
+        console.log('Guesses needed to crack:', stats.guesses)
+        console.log('Crack Time (offline, fastest):', stats.crack_times_display.offline_fast_hashing_1e10_per_second)
+        console.log('Crack Time (online, no limit):', stats.crack_times_display.online_no_throttling_10_per_second)
+        console.log('Crack Time (online, rate-limited):', stats.crack_times_display.online_throttling_100_per_hour)
+        console.log(`Score (higher=stronger): ${stats.score}/4`)
+        console.log('(Source: Dropbox zxcvbn)')
+        console.log('-----------------------------')
+    }
 }
 
 main().catch((err) => {
