@@ -1,12 +1,6 @@
 {
   "name": "passphrase-generator",
   "packageManager": "yarn@4.6.0",
-  "devDependencies": {
-    "@types/node": "^22.13.4",
-    "@types/prompts": "^2.4.9",
-    "@types/zxcvbn": "^4.4.5",
-    "prettier": "^3.5.1"
-  },
   "scripts": {
     "start": "ts-node src/index.ts",
     "format": "prettier --write \"**/*.{js,ts,json}\""
@@ -14,8 +8,12 @@
   "dependencies": {
     "commander": "^13.1.0",
     "prompts": "^2.4.2",
-    "yoctocolors": "^2.1.1",
-    "yoctocolors-cjs": "^2.1.2",
     "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/prompts": "^2.4.9",
+    "@types/zxcvbn": "^4.4.5",
+    "prettier": "^3.5.1"
   }
 }

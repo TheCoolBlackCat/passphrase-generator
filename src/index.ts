@@ -2,7 +2,6 @@
 
 import prompts from "prompts";
 import { Command } from 'commander';
-import colours from 'yoctocolors-cjs';
 import type { CLIOptions } from "./types";
 import { readWordList, migrateWordsList } from "./words";
 import { printPasswordStats } from "./utils";
@@ -80,7 +79,7 @@ async function main() {
     const wordList = await readWordList();
     const numberToJoin = options.addNumber ? Math.floor(Math.random() * 100) : undefined
     const passphrase = await generatePassphraseWithMaxLength(wordList, options.length, options.separator, options.capitalise, numberToJoin)
-    console.log(colours.blue(passphrase))
+    console.log(passphrase)
     if (options.showStats) {
         printPasswordStats(passphrase)
     }
