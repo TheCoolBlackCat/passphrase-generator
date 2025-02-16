@@ -11,6 +11,7 @@ interface WordList {
     wordsByLength: Record<number, Array<string>>;
     stats: {
         shortestWordLength: number
+        longestWordLength: number
         availableWordSizes: Array<number>
     }
 }
@@ -27,19 +28,19 @@ async function migrateWordsList() {
       return acc;
     }, []);
 
-    let shortestWordLength = Infinity;
     const wordsByLength = words.reduce((acc: WordList['wordsByLength'], word: string) => {
         const length = word.length;
         if (!acc[length]) {
             acc[length] = [];
         }
         acc[length].push(word);
-        shortestWordLength = Math.min(shortestWordLength, length)
         return acc;
     }, {});
     const availableWordSizes = Object.keys(wordsByLength).map(key => Number(key)).sort((a, b) => b - a)
+    const shortestWordLength = availableWordSizes[availableWordSizes.length - 1]
+    const longestWordLength = availableWordSizes[0]
   
-    const jsonWords = JSON.stringify({words, wordsByLength, stats: {shortestWordLength, availableWordSizes}} satisfies WordList);
+    const jsonWords = JSON.stringify({words, wordsByLength, stats: {shortestWordLength, longestWordLength, availableWordSizes}} satisfies WordList);
     await fs.writeFile("words.json", jsonWords);
     info("Words list migrated successfully");
 }
@@ -57,40 +58,50 @@ async function getWordList(): Promise<WordList> {
 const capitalizeWord = (word: string) => word[0].toUpperCase() + word.slice(1)
 const pickWordRandomly = (wordList: Array<string>) => wordList[Math.floor(Math.random() * wordList.length)]
 
-async function generatePassphrase({words, wordsByLength, stats}: WordList, length: number, wordCount: number, separator: string, capitalise: boolean, numberToJoin: number | undefined) {
+async function generatePassphrase({words, wordsByLength, stats}: WordList, length: number, separator: string, capitalise: boolean, numberToJoin: number | undefined) {
     if (length < stats.shortestWordLength) {
         throw new Error(`Password length can't be shorter than the length of the shortest word, which is ${stats.shortestWordLength} characters long.`)
     }
-    const numberOfSeperators = wordCount - 1
-    const targetLengthWithoutSeperators = length
-        - (numberOfSeperators*separator.length)
-        - (numberToJoin ? numberToJoin.toString().length : 0)
+
+    const targetLengthOfJustWords = length - (numberToJoin ? numberToJoin.toString().length : 0)
 
     // console.log(`length=${length}, wordCount=${wordCount}, wordsByLength[${minWordLength}]`)
     // console.log('availableWordSizes:', stats.availableWordSizes)
 
     let generatedLength = 0
-    let lengthToFill = 0
+    let lengthToFill = targetLengthOfJustWords
     let pickedWords: Array<string> = []
     let needToAddNumber = !!numberToJoin
     do {
-        const wordLength = stats.availableWordSizes.reduce((currentLength: number, wordLength: number) => {
-            if (wordLength <= lengthToFill && wordLength > currentLength) {
+        // Get the longest size word we can use to fill the available space
+        const wordLength = stats.availableWordSizes.reduce((selectedWordLength: number, wordLength: number) => {
+            if (wordLength <= lengthToFill && wordLength > selectedWordLength) {
                 return wordLength
             }
-            return currentLength
-        }, stats.availableWordSizes[0])
+            return selectedWordLength
+        }, stats.longestWordLength)
+
+
+        // Pick a random word of that length, and append it and maybe the number to the list
         const randomWord = pickWordRandomly(wordsByLength[wordLength])
         const shouldAddNumberThisTime = needToAddNumber && (Math.random() > 0.5)
         if (shouldAddNumberThisTime) {
             needToAddNumber = false
+            pickedWords.push(randomWord + numberToJoin)
+        } else {
+            pickedWords.push(randomWord)
         }
-        pickedWords.push(randomWord + (shouldAddNumberThisTime ? numberToJoin : ''))
-        generatedLength += randomWord.length
-        lengthToFill = targetLengthWithoutSeperators - generatedLength
-    }
-    while(generatedLength < targetLengthWithoutSeperators && lengthToFill >= stats.shortestWordLength)
 
+        generatedLength += randomWord.length
+        // Account for seperator length
+        if ((lengthToFill - randomWord.length) > stats.shortestWordLength) {
+            generatedLength += separator.length
+        }
+        lengthToFill = targetLengthOfJustWords - generatedLength
+    }
+    while(generatedLength < targetLengthOfJustWords && lengthToFill > stats.shortestWordLength)
+
+    // Handle capitalisation, add separators and number if it still needs adding 
     if (capitalise) {
         pickedWords = pickedWords.map(word => capitalizeWord(word))
     }
@@ -112,9 +123,10 @@ async function main() {
     let options: Answers<'length' | 'separator' | 'capitalise' | 'addNumber'>;
     
     if (program.opts().migrate) {
-        return await migrateWordsList();
+        await migrateWordsList();
     }
-    else if (program.opts().interactive || process.argv.length === 2) {
+
+    if (program.opts().interactive || process.argv.length === 2) {
         options = await prompts([
             {
                 type: "number",
@@ -159,8 +171,9 @@ async function main() {
 
     const wordList = await getWordList();
     const numberToJoin = options.addNumber ? Math.floor(Math.random() * 100) : undefined
-    const passphrase = await generatePassphrase(wordList, options.length, 4, options.separator, options.capitalise, numberToJoin)
-    console.log(passphrase, passphrase.length)
+    const passphrase = await generatePassphrase(wordList, options.length, options.separator, options.capitalise, numberToJoin)
+    console.log(passphrase)
+    console.log('length:', passphrase.length)
 }
 
 main().catch((err) => {
