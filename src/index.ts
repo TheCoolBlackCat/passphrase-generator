@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 
 import prompts from "prompts";
 import { Command } from 'commander';

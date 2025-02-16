@@ -1,5 +1,5 @@
 {
-  "name": "passphrase-generator",
+  "name": "passphrase-gen",
   "packageManager": "yarn@4.6.0",
   "scripts": {
     "start": "ts-node src/index.ts",
@@ -15,5 +15,6 @@
     "@types/prompts": "^2.4.9",
     "@types/zxcvbn": "^4.4.5",
     "prettier": "^3.5.1"
-  }
+  },
+  "bin": "./src/index.ts"
 }

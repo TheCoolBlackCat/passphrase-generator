@@ -1,8 +1,11 @@
 import fs from "fs/promises";
 import type { WordList } from "./types";
+import path from "path";
 
-const EFF_LIST = "eff_wordlist.txt"
-const WORDS_JSON = "words.json"
+const moduleDir = path.parse(__dirname).dir
+
+const EFF_LIST = path.resolve(moduleDir, "eff_wordlist.txt")
+const WORDS_JSON = path.resolve(moduleDir, "words.json")
 
 export async function migrateWordsList() {
     console.info("Migrating words list...");

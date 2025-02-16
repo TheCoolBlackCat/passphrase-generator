@@ -1,7 +1,7 @@
 import { WordList } from "./types"
 import { capitalizeWord, randomItem } from "./utils"
 
-export async function generatePassphraseWithMaxLength({words, wordsByLength, stats}: WordList, length: number, separator: string, capitalise: boolean, numberToJoin: number | undefined): Promise<string> {
+export async function generatePassphraseWithMaxLength({wordsByLength, stats}: WordList, length: number, separator: string, capitalise: boolean, numberToJoin: number | undefined): Promise<string> {
     if (length < stats.shortestWordLength) {
         throw new Error(`Password length can't be shorter than the length of the shortest word, which is ${stats.shortestWordLength} characters long.`)
     }

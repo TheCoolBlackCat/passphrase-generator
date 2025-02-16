@@ -45,9 +45,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"passphrase-generator@workspace:.":
+"passphrase-gen@workspace:.":
   version: 0.0.0-use.local
-  resolution: "passphrase-generator@workspace:."
+  resolution: "passphrase-gen@workspace:."
   dependencies:
     "@types/node": "npm:^22.13.4"
     "@types/prompts": "npm:^2.4.9"
@@ -56,6 +56,8 @@ __metadata:
     prettier: "npm:^3.5.1"
     prompts: "npm:^2.4.2"
     zxcvbn: "npm:^4.4.2"
+  bin:
+    passphrase-gen: ./src/index.ts
   languageName: unknown
   linkType: soft
 
