@@ -111,7 +111,7 @@ async function generatePassphrase({words, wordsByLength, stats}: WordList, lengt
     return pickedWords.join(separator) + (needToAddNumber ? numberToJoin : '');
 }
 
-// TODO: Generate passphrase from a given number of words, rather than total length
+// TODO: Generate passphrase "normally" from a given number of words, rather than total length
 
 async function main() {
     const program = new Command();
