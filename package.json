@@ -1,4 +1,16 @@
 {
   "name": "passphrase-generator",
-  "packageManager": "yarn@4.6.0"
+  "packageManager": "yarn@4.6.0",
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/prompts": "^2.4.9",
+    "prettier": "^3.5.1"
+  },
+  "scripts": {
+    "start": "ts-node index.ts",
+    "format": "prettier --write \"**/*.{js,ts,json}\""
+  },
+  "dependencies": {
+    "prompts": "^2.4.2"
+  }
 }
