@@ -1,8 +1,8 @@
 {
   "name": "passphrase-gen",
-  "packageManager": "yarn@4.6.0",
+  "type": "module",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "tsx src/index.ts",
     "format": "prettier --write \"**/*.{js,ts,json}\""
   },
   "dependencies": {

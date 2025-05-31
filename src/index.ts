@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 
 import prompts from "prompts";
 import { Command } from 'commander';
@@ -85,7 +85,10 @@ async function main() {
     }
 }
 
-main().catch((err) => {
-  console.error("Unable to generate password:", err);
-  process.exit(1);
-});
+const runMain = () => main().catch(console.error);
+
+if (require.main === module) {
+    runMain();
+}
+
+export default runMain;
