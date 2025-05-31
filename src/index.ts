@@ -6,6 +6,7 @@ import type { CLIOptions } from "./types";
 import { readWordList, migrateWordsList } from "./words";
 import { printPasswordStats } from "./utils";
 import { generatePassphraseWithMaxLength } from "./generate";
+import { pathToFileURL } from "node:url";
 
 async function main() {
     const program = new Command();
@@ -87,7 +88,8 @@ async function main() {
 
 const runMain = () => main().catch(console.error);
 
-if (require.main === module) {
+const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
     runMain();
 }
 
