@@ -8,27 +8,25 @@ import { printPasswordStats } from "./utils";
 import { generatePassphraseWithMaxLength } from "./generate";
 import { pathToFileURL } from "node:url";
 
-async function main() {
-    const program = new Command();
-    program
-        .option('-l, --length <number>', 'length of passphrase', '20')
-        .option('-s, --separator <char>', 'separator between words', '-')
-        .option('-c, --capitalise <boolean>', 'capitalize each word', 'true')
-        .option('-n, --add-number <boolean>', 'add random number', 'true')
-        .option('-i, --interactive', 'use interactive prompt mode')
-        .option('--stats', 'show password stats', false)
-        .option('--migrate', 'migrate eff_wordlist.txt file to JSON');
+interface CommanderOptions {
+    length: string;
+    separator: string;
+    capitalise: boolean;
+    addNumber: boolean;
+    interactive?: boolean;
+    stats?: boolean;
+    migrate?: boolean;
+}
 
-    program.parse();
-
-    let options: CLIOptions
-    
-    if (program.opts().migrate) {
+async function runPasswordGenerator(programOptions: CommanderOptions) {
+    if (programOptions.migrate) {
         await migrateWordsList();
     }
 
-    if (program.opts().interactive || process.argv.length === 2) {
-        options = await prompts([
+    let parameters: CLIOptions;
+    if (programOptions.interactive) {
+        console.log('🔐 Passphrase Generator');
+        parameters = await prompts([
             {
                 type: "number",
                 name: "length",
@@ -62,28 +60,61 @@ async function main() {
             }
         ]);
 
-        if (!options.length) {
+        if (!parameters.length) {
             console.log("Operation cancelled");
             process.exit(1);
         }
     } else {
-        const opts = program.opts();
-        options = {
-            length: parseInt(opts.length),
-            separator: opts.separator,
-            capitalise: opts.capitalise === 'true',
-            addNumber: opts.addNumber === 'true',
-            showStats: opts.stats
+        console.log('Using CLI options');
+        parameters = {
+            length: parseInt(programOptions.length),
+            separator: programOptions.separator,
+            capitalise: programOptions.capitalise === true,
+            addNumber: programOptions.addNumber === true,
+            showStats: programOptions.stats
         };
     }
 
+    console.log(`Generating passphrase with options: ${JSON.stringify(parameters, null, 2)}`);
+
     const wordList = await readWordList();
-    const numberToJoin = options.addNumber ? Math.floor(Math.random() * 100) : undefined
-    const passphrase = await generatePassphraseWithMaxLength(wordList, options.length, options.separator, options.capitalise, numberToJoin)
-    console.log(passphrase)
-    if (options.showStats) {
+    const numberToJoin = parameters.addNumber ? Math.floor(Math.random() * 100) : undefined
+    const passphrase = await generatePassphraseWithMaxLength(wordList, parameters.length, parameters.separator, parameters.capitalise, numberToJoin)
+    if (parameters.showStats) {
         printPasswordStats(passphrase)
     }
+    return passphrase;
+}
+
+async function createProgram() {
+    const program = new Command();
+    program
+        .option('-l, --length <number>', 'length of passphrase', '20')
+        .option('-s, --separator <char>', 'separator between words', '-')
+        .option('-c, --capitalise <boolean>', 'capitalize each word', true)
+        .option('-n, --add-number <boolean>', 'add random number', true)
+        .option('-i, --interactive', 'use interactive prompt mode')
+        .option('--stats', 'show password stats', false)
+        .option('--migrate', 'migrate eff_wordlist.txt file to JSON');
+    return program;
+}
+
+export async function generatePassphrase(args: Array<string> = []) {
+    const program = await createProgram();
+    console.log('args', args);
+    // We need the first 2 args to avoid Commander parsing issues
+    await program.parseAsync(['','', ...args]);
+    const opts = program.opts<CommanderOptions>()
+    console.log('opts', opts);
+    return await runPasswordGenerator(opts);
+}
+
+async function main() {
+    const program = await createProgram();
+    await program.parseAsync(); // Use CLI args
+    const opts = program.opts<CommanderOptions>()
+    const passphrase = await runPasswordGenerator(opts);
+    console.log(passphrase)
 }
 
 const runMain = () => main().catch(console.error);
