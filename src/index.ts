@@ -61,11 +61,10 @@ async function runPasswordGenerator(programOptions: CommanderOptions) {
         ]);
 
         if (!parameters.length) {
-            console.log("Operation cancelled");
+            console.log("Operation cancelled by user.");
             process.exit(1);
         }
     } else {
-        console.log('Using CLI options');
         parameters = {
             length: parseInt(programOptions.length),
             separator: programOptions.separator,
@@ -74,8 +73,6 @@ async function runPasswordGenerator(programOptions: CommanderOptions) {
             showStats: programOptions.stats
         };
     }
-
-    console.log(`Generating passphrase with options: ${JSON.stringify(parameters, null, 2)}`);
 
     const wordList = await readWordList();
     const numberToJoin = parameters.addNumber ? Math.floor(Math.random() * 100) : undefined
@@ -101,19 +98,15 @@ async function createProgram() {
 
 export async function generatePassphrase(args: Array<string> = []) {
     const program = await createProgram();
-    console.log('args', args);
     // We need the first 2 args to avoid Commander parsing issues
     await program.parseAsync(['','', ...args]);
-    const opts = program.opts<CommanderOptions>()
-    console.log('opts', opts);
-    return await runPasswordGenerator(opts);
+    return await runPasswordGenerator(program.opts<CommanderOptions>());
 }
 
 async function main() {
     const program = await createProgram();
     await program.parseAsync(); // Use CLI args
-    const opts = program.opts<CommanderOptions>()
-    const passphrase = await runPasswordGenerator(opts);
+    const passphrase = await runPasswordGenerator(program.opts<CommanderOptions>());
     console.log(passphrase)
 }
 
